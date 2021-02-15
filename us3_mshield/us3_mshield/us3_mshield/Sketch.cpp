@@ -106,7 +106,7 @@ void floatTrigger()
 void setup()
 {
 	Serial.begin(115200);
-	Serial3.begin(19200);
+	Serial3.begin(9600,SERIAL_8N2); //RS485 Baud Rate 8 Bits, NONE, 2 STOP Bits
 	sapi_error_t rcode;
 	// Initialize Sensor API
 	sapi_initialize(NULL);

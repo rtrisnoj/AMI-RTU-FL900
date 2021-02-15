@@ -159,8 +159,8 @@ sapi_error_t temp_write_cfg(char *payload, uint8_t *len)
 
 //////////////////////////////////////////////////////////////////////////
 //
-// MOTOROLA ACE 3380
-// Created 10/14/2020
+// FL900
+// Created Feb/05/2020
 // By Ryan Trisnojoyo
 // PINS LAYOUT
 // D2 = RX						RO
@@ -175,7 +175,7 @@ float resultTemp = 0;
 float resultUltra = 0;
 
 byte temp_data[60];
-byte sendRequest10Data[8]={0x0A,0x03,0x08,0x01,0x00,0x0A,0x97,0x16};				//Send Request for Manufacturer ID
+byte sendRequest10Data[8]={0x01,0x03,0x00,0x0C,0x00,0x02,0x04,0x08};				//Send Request for Manufacturer ID
 int w = 0;
 char		motorola_payload[128];
 char		temp_result[128];
@@ -186,23 +186,23 @@ char* Send(byte * cmd, byte* ret) {
 	//turn on relay
 	digitalWrite(D6, HIGH);
 	digitalWrite(D7, LOW);
-	delay(5000);
+	delay(50);
 	sendCommand(cmd);
 	
 	int h = 0;
 	// receive answer
 	if (Serial3.available()){  //Read return data package (NOTE: Demo is just for your reference, the data package haven't be calibrated yet)
-	while(Serial3.read() != 0x0A && h < 1000){
+	while(Serial3.read() != 0x01 && h < 1000){
 		h = h + 1;
 	}
 	h = 0;
-	ret[0] = 0x0A;
-	for(int j=2; j < 46; j++){
+	ret[0] = 0x01;
+	for(int j=2; j < 24; j++){
 		ret[j++]=(Serial3.read());
 	}
 	
     Serial.println("Data Begin");
-	/*
+	
     Serial.println(ret[0],HEX); //byte 1     //Slave ID
     Serial.println(ret[2],HEX); //byte 2     //Function Code
     Serial.println(ret[4],HEX); //byte 3     //How many bytes send
@@ -226,7 +226,7 @@ char* Send(byte * cmd, byte* ret) {
 	Serial.println(ret[40],HEX); //byte 21	 //
 	Serial.println(ret[42],HEX); //byte 18   //10th Register
 	Serial.println(ret[44],HEX); //byte 19	 //
-	*/
+	
 	strcpy(temp_result, "");
 	
 	//put everything in the String (all the rs485 data from Motorola ACE)
@@ -234,13 +234,13 @@ char* Send(byte * cmd, byte* ret) {
 		sprintf(motorola_payload, "%X,", ret[y]);
 		strcat(temp_result,motorola_payload);
 	};
+	
 	sprintf(motorola_payload, "%X;", ret[44]);
 	strcat(temp_result,motorola_payload);
 	Serial.println(temp_result);
 	
 	sprintf(motorola_payload, "%X;", ret[44]);
 	Serial.println();
-
 
     Serial.println("Data End");
 
@@ -259,6 +259,33 @@ char* Send(byte * cmd, byte* ret) {
 	return temp_result;
 }
 
+// Convert Hex value to float.
+//Float -> Mid-Little Endian (CDAB)
+/*
+float a1;
+
+float function main(a1) {
+	float b1 = a1;
+	float d1= b1.substring(4,12);
+	float int = parseInt(d1, 16);
+	if (int > 0 || int < 0) {
+		float sign = (int >>> 31) ? -1 : 1;
+		float exp = (int >>> 23 & 0xff) - 127;
+		float mantissa = ((int & 0x7fffff) + 0x800000).toString(2);
+		float float32 = 0;
+		for (int i = 0; i < mantissa.length; i += 1) { float32 += parseInt(mantissa[i]) ? Math.pow(2, exp) : 0; exp-- }
+		float c = float32 * sign;
+	}
+	else c=0;
+	return c;
+	
+	byte[] bytes = new byte[]{ 0x42, 0xE6, 0x56, 0x00 }; // Big endian data
+	if (BitConverter.IsLittleEndian) {
+		Array.Reverse(bytes); // Convert big endian to little endian
+	}
+	float myFloat = BitConverter.ToSingle(bytes, 0);
+}
+*/
 /*sendCommand(...)******************************************************************************
  * General function that sends command to RS485 peripheral device
  * <CR> is added to all commands
@@ -269,11 +296,12 @@ void sendCommand(byte *cmd) {
 //check if transmit the correct data
 /*
  Serial.println("Send Command");
- for(int i=0; i < 6; i++){
+ for(int i=0; i < 8; i++){
     Serial.print(cmd[i]);
     Serial.println("");
  }
  */
+ 
 	// set RTS to HIGH to allow writing to MAX485
  	digitalWrite(D4, HIGH);
  	digitalWrite(D5, HIGH); 
@@ -344,7 +372,8 @@ sapi_error_t temp_build_payload(char *buf, float *reading)
 	//Send(sendRequest10Data, temp_data);
 	//* motorola_temp = Send(sendRequest10Data, temp_data); // RT //WRONG HERE, HARDFAULT
 	sprintf(rmotorola1, "%s", Send(sendRequest10Data, temp_data)); //RT
-
+	delay(5000);
+	
 	// Create string containing the UNIX epoch
 	epoch = get_rtc_epoch();
 	sprintf(temp_epoch, "%d,", epoch);
