@@ -174,7 +174,7 @@ sapi_error_t temp_write_cfg(char *payload, uint8_t *len)
 float resultTemp = 0;
 float resultUltra = 0;
 
-byte temp_data[60];
+byte temp_data[30];
 byte sendRequest10Data[8]={0x01,0x03,0x00,0x0C,0x00,0x02,0x04,0x08};				//Send Request for Manufacturer ID
 int w = 0;
 char		motorola_payload[128];
@@ -186,9 +186,8 @@ char* Send(byte * cmd, byte* ret) {
 	//turn on relay
 	digitalWrite(D6, HIGH);
 	digitalWrite(D7, LOW);
-	delay(50);
+	delay(100);
 	sendCommand(cmd);
-	
 	int h = 0;
 	// receive answer
 	if (Serial3.available()){  //Read return data package (NOTE: Demo is just for your reference, the data package haven't be calibrated yet)
@@ -202,7 +201,6 @@ char* Send(byte * cmd, byte* ret) {
 	}
 	
     Serial.println("Data Begin");
-	
     Serial.println(ret[0],HEX); //byte 1     //Slave ID
     Serial.println(ret[2],HEX); //byte 2     //Function Code
     Serial.println(ret[4],HEX); //byte 3     //How many bytes send
@@ -216,6 +214,7 @@ char* Send(byte * cmd, byte* ret) {
 	Serial.println(ret[20],HEX); //byte 11   //
 	Serial.println(ret[22],HEX); //byte 12   //5th Register
 	Serial.println(ret[24],HEX); //byte 13	 //
+	/*
 	Serial.println(ret[26],HEX); //byte 14   //6th Register
 	Serial.println(ret[28],HEX); //byte 15	 //
 	Serial.println(ret[30],HEX); //byte 16   //7th Register
@@ -223,14 +222,17 @@ char* Send(byte * cmd, byte* ret) {
 	Serial.println(ret[34],HEX); //byte 18   //8th Register
 	Serial.println(ret[36],HEX); //byte 19	 //
 	Serial.println(ret[38],HEX); //byte 20   //9th Register
+	Serial.println(ret[39],HEX); //byte 21	 //
 	Serial.println(ret[40],HEX); //byte 21	 //
+	Serial.println(ret[41],HEX); //byte 19	 //
 	Serial.println(ret[42],HEX); //byte 18   //10th Register
+	Serial.println(ret[43],HEX); //byte 19	 //
 	Serial.println(ret[44],HEX); //byte 19	 //
-	
+	*/
 	strcpy(temp_result, "");
 	
 	//put everything in the String (all the rs485 data from Motorola ACE)
-	for (int y = 0; y < 44; y = y + 2){
+	for (int y = 0; y < 24; y = y + 2){
 		sprintf(motorola_payload, "%X,", ret[y]);
 		strcat(temp_result,motorola_payload);
 	};
@@ -372,8 +374,8 @@ sapi_error_t temp_build_payload(char *buf, float *reading)
 	//Send(sendRequest10Data, temp_data);
 	//* motorola_temp = Send(sendRequest10Data, temp_data); // RT //WRONG HERE, HARDFAULT
 	sprintf(rmotorola1, "%s", Send(sendRequest10Data, temp_data)); //RT
-	delay(5000);
-	
+	delay(1000);
+	sprintf(rmotorola1, "%s", Send(sendRequest10Data, temp_data)); //RT
 	// Create string containing the UNIX epoch
 	epoch = get_rtc_epoch();
 	sprintf(temp_epoch, "%d,", epoch);
