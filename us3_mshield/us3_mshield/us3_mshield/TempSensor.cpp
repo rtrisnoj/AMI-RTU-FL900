@@ -168,8 +168,8 @@ sapi_error_t temp_write_cfg(char *payload, uint8_t *len)
 // D4 = DIGITAL OUTPUT			RE
 // D5 = DIGITAL OUTPUT			DE
 // Two Wire Ethernet Most Left and Most Right
-// RS485_TX = B		--->		Most Left or Most Right
-// RS485_RX = A		--->		Most Left or Most Right
+// RS485_TX = B		--->		Connect to RT- (White)
+// RS485_RX = A		--->		Connect to RT+ (Green)
 //////////////////////////////////////////////////////////////////////////
 float resultTemp = 0;
 float resultUltra = 0;
@@ -183,6 +183,7 @@ byte sendRequestQuality[8]={0x01,0x03,0x00,0x14,0x00,0x02,0x84,0x0F};				//Send 
 int w = 0;
 char		motorola_payload[128];
 char		temp_result[128];
+char		temp_tempdata[128];
 char		temp_battery[128];
 char		temp_level[128];
 char		temp_velocity[128];
@@ -241,20 +242,20 @@ char* Send(byte * cmd, byte* ret) {
 	Serial.println(ret[44],HEX); //byte 19	 //
 	*/
 	strcpy(temp_result, "");
-	strcpy(temp_battery, "");
+	strcpy(temp_tempdata, "");
 	//put everything in the String (all the rs485 data from Motorola ACE)
 	//for (int y = 0; y < 16; y = y + 2){
 		for (int y = 6; y < 14; y = y + 2){
 		sprintf(motorola_payload, "%X", ret[y]);
 		
-		strcat(temp_battery, motorola_payload);
+		strcat(temp_tempdata, motorola_payload);
 		strcat(temp_result,motorola_payload);
 	};
-	Serial.print("Temp Battery :");
-	Serial.println(temp_battery);
+	Serial.print("Temp Data :");
+	Serial.println(temp_tempdata);
 	//convertCDAB(temp_battery);
-	Serial.print("Battery is : ");
-	Serial.println(convertCDAB(temp_battery));
+	Serial.print("Temp Data is : ");
+	Serial.println(convertCDAB(temp_tempdata));
 	
 	/*sprintf(motorola_payload, "%X;", ret[44]);
 	strcat(temp_result,motorola_payload);
@@ -309,33 +310,6 @@ float convertCDAB(char * test) {
 }
 
 
-// Convert Hex value to float.
-//Float -> Mid-Little Endian (CDAB)
-/*
-float a1;
-
-float function main(a1) {
-	float b1 = a1;
-	float d1= b1.substring(4,12);
-	float int = parseInt(d1, 16);
-	if (int > 0 || int < 0) {
-		float sign = (int >>> 31) ? -1 : 1;
-		float exp = (int >>> 23 & 0xff) - 127;
-		float mantissa = ((int & 0x7fffff) + 0x800000).toString(2);
-		float float32 = 0;
-		for (int i = 0; i < mantissa.length; i += 1) { float32 += parseInt(mantissa[i]) ? Math.pow(2, exp) : 0; exp-- }
-		float c = float32 * sign;
-	}
-	else c=0;
-	return c;
-	
-	byte[] bytes = new byte[]{ 0x42, 0xE6, 0x56, 0x00 }; // Big endian data
-	if (BitConverter.IsLittleEndian) {
-		Array.Reverse(bytes); // Convert big endian to little endian
-	}
-	float myFloat = BitConverter.ToSingle(bytes, 0);
-}
-*/
 /*sendCommand(...)******************************************************************************
  * General function that sends command to RS485 peripheral device
  * <CR> is added to all commands
@@ -425,7 +399,7 @@ sapi_error_t temp_build_payload(char *buf, float *reading)
 	delay(1000);
 	sprintf(rmotorola1, "%s", Send(sendRequestBattery, temp_data)); //RT
 	
-	/*delay(1000);
+	delay(1000);
 	sprintf(rmotorola1, "%s", Send(sendRequestLevel, temp_data)); //RT
 	delay(1000);
 	sprintf(rmotorola1, "%s", Send(sendRequestVelocity, temp_data)); //RT
@@ -433,7 +407,7 @@ sapi_error_t temp_build_payload(char *buf, float *reading)
 	sprintf(rmotorola1, "%s", Send(sendRequestFlow, temp_data)); //RT
 	delay(1000);
 	sprintf(rmotorola1, "%s", Send(sendRequestQuality, temp_data)); //RT
-	*/
+	
 	// Create string containing the UNIX epoch
 	epoch = get_rtc_epoch();
 	sprintf(temp_epoch, "%d,", epoch);
