@@ -123,6 +123,7 @@ bool setValue(String parameter, String value);
 void loadGlobalVariables();
 int ParamSendInterval();
 int ParamSampleRate();
+float convertCDAB(char * test);
 //////////////////////////////////////////////////////////////////////////
 //
 // SAPI sensor functions

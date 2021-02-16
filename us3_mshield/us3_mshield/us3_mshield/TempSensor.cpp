@@ -175,18 +175,29 @@ float resultTemp = 0;
 float resultUltra = 0;
 
 byte temp_data[30];
-byte sendRequest10Data[8]={0x01,0x03,0x00,0x0C,0x00,0x02,0x04,0x08};				//Send Request for Manufacturer ID
+byte sendRequestBattery[8]={0x01,0x03,0x00,0x0C,0x00,0x02,0x04,0x08};				//Send Request for Manufacturer ID
+byte sendRequestLevel[8]={0x01,0x03,0x00,0x0E,0x00,0x02,0xA5,0xC8};				//Send Request for Manufacturer ID
+byte sendRequestVelocity[8]={0x01,0x03,0x00,0x10,0x00,0x02,0xC5,0xCE};				//Send Request for Manufacturer ID
+byte sendRequestFlow[8]={0x01,0x03,0x00,0x12,0x00,0x02,0x64,0x0E};				//Send Request for Manufacturer ID
+byte sendRequestQuality[8]={0x01,0x03,0x00,0x14,0x00,0x02,0x84,0x0F};				//Send Request for Manufacturer ID	
 int w = 0;
 char		motorola_payload[128];
 char		temp_result[128];
+char		temp_battery[128];
+char		temp_level[128];
+char		temp_velocity[128];
+char		temp_flow[128];
+char		temp_quality[128];
 size_t bytes;
 
 char* Send(byte * cmd, byte* ret) {
 	// use default send function
 	//turn on relay
+	/*
 	digitalWrite(D6, HIGH);
 	digitalWrite(D7, LOW);
 	delay(100);
+	*/
 	sendCommand(cmd);
 	int h = 0;
 	// receive answer
@@ -230,18 +241,27 @@ char* Send(byte * cmd, byte* ret) {
 	Serial.println(ret[44],HEX); //byte 19	 //
 	*/
 	strcpy(temp_result, "");
-	
+	strcpy(temp_battery, "");
 	//put everything in the String (all the rs485 data from Motorola ACE)
-	for (int y = 0; y < 24; y = y + 2){
-		sprintf(motorola_payload, "%X,", ret[y]);
+	//for (int y = 0; y < 16; y = y + 2){
+		for (int y = 6; y < 14; y = y + 2){
+		sprintf(motorola_payload, "%X", ret[y]);
+		
+		strcat(temp_battery, motorola_payload);
 		strcat(temp_result,motorola_payload);
 	};
+	Serial.print("Temp Battery :");
+	Serial.println(temp_battery);
+	//convertCDAB(temp_battery);
+	Serial.print("Battery is : ");
+	Serial.println(convertCDAB(temp_battery));
 	
-	sprintf(motorola_payload, "%X;", ret[44]);
+	/*sprintf(motorola_payload, "%X;", ret[44]);
 	strcat(temp_result,motorola_payload);
 	Serial.println(temp_result);
 	
 	sprintf(motorola_payload, "%X;", ret[44]);
+	*/
 	Serial.println();
 
     Serial.println("Data End");
@@ -260,6 +280,34 @@ char* Send(byte * cmd, byte* ret) {
 	
 	return temp_result;
 }
+
+// Convert Hex value to float.
+//Float -> Mid-Little Endian (CDAB)
+float convertCDAB(char * test) {
+	//char *hex_in = "F2584135";
+	char *hex_in = test;
+	printf("hex_in: %s\n", hex_in);
+
+	// Flip: 0x________\0
+	char hex_flip[] = "0x________";
+	memcpy(&hex_flip[2], hex_in+4, 4);
+	memcpy(&hex_flip[6], hex_in, 4);
+	printf("hex_flip: %s\n", hex_flip);
+
+	// Convert
+
+	uint32_t uint_value;
+	float float_value;
+	sscanf(hex_flip, "%x", &uint_value);
+	printf("uint_value: 0x%x\n", uint_value);
+
+	float_value = *((float *)&uint_value);
+	printf("float_value: %f\n", float_value);
+
+	return float_value;
+
+}
+
 
 // Convert Hex value to float.
 //Float -> Mid-Little Endian (CDAB)
@@ -373,9 +421,19 @@ sapi_error_t temp_build_payload(char *buf, float *reading)
 	Serial3.flush();
 	//Send(sendRequest10Data, temp_data);
 	//* motorola_temp = Send(sendRequest10Data, temp_data); // RT //WRONG HERE, HARDFAULT
-	sprintf(rmotorola1, "%s", Send(sendRequest10Data, temp_data)); //RT
+	sprintf(rmotorola1, "%s", Send(sendRequestBattery, temp_data)); //RT
 	delay(1000);
-	sprintf(rmotorola1, "%s", Send(sendRequest10Data, temp_data)); //RT
+	sprintf(rmotorola1, "%s", Send(sendRequestBattery, temp_data)); //RT
+	
+	/*delay(1000);
+	sprintf(rmotorola1, "%s", Send(sendRequestLevel, temp_data)); //RT
+	delay(1000);
+	sprintf(rmotorola1, "%s", Send(sendRequestVelocity, temp_data)); //RT
+	delay(1000);
+	sprintf(rmotorola1, "%s", Send(sendRequestFlow, temp_data)); //RT
+	delay(1000);
+	sprintf(rmotorola1, "%s", Send(sendRequestQuality, temp_data)); //RT
+	*/
 	// Create string containing the UNIX epoch
 	epoch = get_rtc_epoch();
 	sprintf(temp_epoch, "%d,", epoch);
